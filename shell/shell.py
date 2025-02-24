@@ -2,10 +2,9 @@ import os
 import sys, re, time
 outputRedirect = False
 inputRedirect = False
-if os.environ['PS1']:
-    PS1 = os.environ.get('PS1', '$')
-else:
-    PS1 = '$'
+
+PS1 = os.environ.get('PS1', '$')
+if not PS1: PS1 = '$'
 while 1:
     os.write(1, (PS1+'>').encode())
     buff = os.read(0,1000)
@@ -21,7 +20,7 @@ while 1:
                 os.write(1, (str(e) + "\n").encode())
         else:
             os.write(1, "cd: missing argument\n".encode())
-
+        continue
     if not command.startswith('\n'):
         rc = os.fork()
         if rc < 0:
