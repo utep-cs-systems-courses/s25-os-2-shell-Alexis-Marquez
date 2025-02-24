@@ -7,16 +7,22 @@ else:
 while 1:
     os.write(1, (PS1+'>').encode())
     buff = os.read(0,1000)
-    if buff.decode().strip() == 'exit':
+    command = buff.decode()
+    if command.strip() == 'exit':
         sys.exit(0)
-    if not buff.decode().startswith('\n'):
+    if command.strip() == 'cd':
+        try:
+            os.chdir(command.split()[1])
+        except Exception as e:
+            os.write(1, str(e).encode())
+    if not command.startswith('\n'):
         rc = os.fork()
         if rc < 0:
             os.write(2, ("fork failed, returning %d\n" % rc).encode())
             sys.exit(1)
 
         elif rc == 0:                   # child
-            string = buff.decode().strip()
+            string = command.strip()
             args = string.split(' ')
             for dir in re.split(":", os.environ['PATH']): # try each directory in the path
                 program = "%s/%s" % (dir, args[0])
