@@ -33,7 +33,7 @@ def check_for_input_redirect(args):
     if '<' in args:
         idx = args.index('<')
         try:
-            filename = args[idx]
+            filename = args[idx+1]
             fd = os.open(filename, os.O_RDONLY)
             os.dup2(fd, 0)
             os.close(fd)
@@ -87,7 +87,7 @@ while 1:
             os.dup2(pipe[1], 1)
             os.close(pipe[1])
             left_args = check_for_output_redirect(left_args)
-            args = check_for_input_redirect(left_args)
+            left_args = check_for_input_redirect(left_args)
             execute_program(left_args)
 
         rc2 = os.fork()
