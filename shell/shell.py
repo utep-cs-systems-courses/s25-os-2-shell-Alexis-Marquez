@@ -3,12 +3,14 @@ import sys, re, time
 outputRedirect = False
 inputRedirect = False
 
-PS1 = os.environ.get('PS1', '$')
+PS1 = os.environ.get('PS1')
 if not PS1: PS1 = '$'
 while 1:
-    os.write(1, (PS1+'>').encode())
+    os.write(1, (PS1+'> ').encode())
     buff = os.read(0,1000)
     command = buff.decode()
+    if command.startswith('\n'):
+        continue
     if command.strip() == 'exit':
         sys.exit(0)
     if command.strip().startswith('cd'):
@@ -21,7 +23,52 @@ while 1:
         else:
             os.write(1, "cd: missing argument\n".encode())
         continue
-    if not command.startswith('\n'):
+
+    bckg = command.endswith('&')
+    if bckg:
+        command = command[:-1]
+
+    if '|' in command:
+        left, right = command.split('|')
+        left_args = left.split()
+        right_args = right.split()
+
+        pipe = os.pipe()
+
+        rc = os.fork()
+        if rc < 0:
+            os.write(2, ('fork failed, returning %d\n' % rc).encode())
+            sys.exit(1)
+        elif rc == 0:
+            os.close(pipe[0])
+            os.dup2(pipe[1], 1)
+            os.close(pipe[1])
+
+            try:
+                os.execve(left_args[0], left_args, os.environ)
+            except FileNotFoundError:
+                os.write(2, ('Command not found%d\n' % rc).encode())
+                sys.exit(1)
+        rc2 = os.fork()
+        if rc2 < 0:
+            os.write(2, ('fork failed, returning %d\n' % rc2).encode())
+            sys.exit(1)
+        elif rc2 == 0:
+            os.close(pipe[1])
+            os.dup2(pipe[0], 0)
+            os.close(pipe[0])
+
+            try:
+                os.execve(right_args[0], right_args, os.environ)
+            except FileNotFoundError:
+                os.write(2, ('Command not found%d\n' % rc2).encode())
+                sys.exit(1)
+        os.close(pipe[1])
+        os.close(pipe[0])
+        os.wait()
+        os.wait()
+
+    else:
         rc = os.fork()
         if rc < 0:
             os.write(2, ("fork failed, returning %d\n" % rc).encode())
