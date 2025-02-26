@@ -67,9 +67,9 @@ while 1:
             os.write(1, "cd: missing argument\n".encode())
         continue
 
-    bckg = command.endswith('&')
+    bckg = '&' in command
     if bckg:
-        command = command[:-1].strip()
+        command = command[:-2].strip()
 
     if '|' in command:
         left, right = command.split('|')
