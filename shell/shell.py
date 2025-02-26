@@ -23,11 +23,11 @@ def check_for_output_redirect(args):
             fd = os.open(filename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
             os.dup2(fd, 1)
             os.close(fd)
-            nArgs = args[:idx]
-            return nArgs
+            return args[:idx]
         except IndexError:
             os.write(1, "Please provide a filename\n".encode())
             sys.exit(1)
+    return args
 
 def check_for_input_redirect(args):
     if '<' in args:
@@ -37,14 +37,14 @@ def check_for_input_redirect(args):
             fd = os.open(filename, os.O_RDONLY)
             os.dup2(fd, 0)
             os.close(fd)
-            nArgs = args[:idx]
-            return nArgs
+            return args[:idx]
         except IndexError:
             os.write(1, "Please provide a filename\n".encode())
             sys.exit(1)
         except FileNotFoundError:
             os.write(1, "Input file not found\n".encode())
             sys.exit(1)
+    return args
 
 PS1 = os.environ.get('PS1')
 if not PS1: PS1 = '$'
