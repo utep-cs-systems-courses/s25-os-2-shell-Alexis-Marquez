@@ -15,6 +15,36 @@ def execute_program(args):
     sys.exit(1)
 
 
+def check_for_output_redirect(args):
+    if '>' in args:
+        idx = args.index('>')
+        try:
+            filename = args[idx + 1]
+            fd = os.open(filename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+            os.dup2(fd, 1)
+            os.close(fd)
+            nArgs = args[:idx]
+            return nArgs
+        except IndexError:
+            os.write(1, "Please provide a filename\n".encode())
+            sys.exit(1)
+
+def check_for_input_redirect(args):
+    if '<' in args:
+        idx = args.index('<')
+        try:
+            filename = args[idx]
+            fd = os.open(filename, os.O_RDONLY)
+            os.dup2(fd, 0)
+            os.close(fd)
+            nArgs = args[:idx]
+            return nArgs
+        except IndexError:
+            os.write(1, "Please provide a filename\n".encode())
+            sys.exit(1)
+        except FileNotFoundError:
+            os.write(1, "Input file not found\n".encode())
+            sys.exit(1)
 
 PS1 = os.environ.get('PS1')
 if not PS1: PS1 = '$'
@@ -56,7 +86,8 @@ while 1:
             os.close(pipe[0])
             os.dup2(pipe[1], 1)
             os.close(pipe[1])
-
+            left_args = check_for_output_redirect(left_args)
+            args = check_for_input_redirect(left_args)
             execute_program(left_args)
 
         rc2 = os.fork()
@@ -67,6 +98,8 @@ while 1:
             os.close(pipe[1])
             os.dup2(pipe[0], 0)
             os.close(pipe[0])
+            right_args = check_for_output_redirect(right_args)
+            right_args = check_for_input_redirect(right_args)
             execute_program(right_args)
 
         os.close(pipe[1])
@@ -83,32 +116,8 @@ while 1:
         elif rc == 0:# child
             string = command.strip()
             args = string.split(' ')
-            if '>' in args:
-                idx = args.index('>')
-                try:
-                    filename = args[idx + 1]
-                    fd = os.open(filename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
-                    os.dup2(fd, 1)
-                    os.close(fd)
-                    args = args[:idx]
-                except IndexError:
-                    os.write(1, "Please provide a filename\n".encode())
-                    sys.exit(1)
-
-            if '<' in args:
-                idx = args.index('<')
-                try:
-                    filename = args[idx + 1]
-                    fd = os.open(filename, os.O_RDONLY)
-                    os.dup2(fd, 0)
-                    os.close(fd)
-                    args = args[:idx]
-                except IndexError:
-                    os.write(1, "Please provide a filename\n".encode())
-                    sys.exit(1)
-                except FileNotFoundError:
-                    os.write(1, "Input file not found\n".encode())
-                    sys.exit(1)
+            args = check_for_output_redirect(args)
+            args = check_for_input_redirect(args)
             execute_program(args)
 
 
